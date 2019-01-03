@@ -18,5 +18,9 @@ setup(
 	author_email = "davidma@davidma.cn",
 	license = 'MIT',
 	packages = find_packages(),
+	install_requires = [
+		'nltk',
+		'overlay',
+	],
 	include_package_data = True,
 )
