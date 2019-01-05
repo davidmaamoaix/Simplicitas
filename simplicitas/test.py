@@ -1,3 +1,4 @@
 from network import *
 
-page = Wikipedia('asdnjsa')
+page = Wikipedia('Minecr')
+ 

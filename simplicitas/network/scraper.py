@@ -5,31 +5,38 @@ __all__ = [
 	'Wikipedia',
 ]
 
+import re
 import bs4
 import requests
 
 class Page(bs4.BeautifulSoup):
 	'''A wrapper for BeautifulSoup. Scrap a single web page.'''
 
-	def __init__(self, url, parser='lxml', redirect=True, timeout=5):
+	def __init__(self, url='', redirect=True, timeout=5, **kwargs):
 		'''Instantiate a page object.
 
 		Args:
 			url: str, the url for the web page.
-			parser: str, the parser to use for the web page.
 			redirect: bool, whether to allow auto redirect.
 			timeout, float, timeout.
 		'''
+		prev_response = kwargs.get('response', False)
 		self._response = requests.get(
 			url,
 			allow_redirects=redirect,
 			timeout=timeout
-		)
-		super().__init__(self._response.text, parser)
+		) if prev_response == False else prev_response
+
+		super().__init__(self._response.text, 'lxml')
 
 	@property
 	def url(self):
 		return self._response.url
+
+	@property
+	def response(self):
+		return self._response
+
 
 	def __str__(self):
 		return f'<Page of {self.url}>'
@@ -48,5 +55,21 @@ class Wikipedia(Page):
 		'''
 		topic = topic.replace(' ', '_')
 		base_url = f'https://{lang}.wikipedia.org/w/index.php?search={topic}'
-		search_page = Page(base_url)
-		print(search_page.url)
+		page = Page(base_url)
+
+		'''If on search page.'''
+		reg = 'https?:\/\/(www\.)?.*\.wikipedia\.org\/w\/index\.php\?search=.*'
+		if re.match(reg, page.url):
+			'''Search for first result.'''
+			is_result = lambda x: x.get('data-serp-pos', '').isdigit()
+			result = page.find('a', {'data-serp-pos': 0})
+			branch = result['href']
+
+			super().__init__(f'https://{lang}.wikipedia.org{branch}')
+		else:
+			'''Already on target page.'''
+			super().__init__(response=page.response)
+
+		'''Compile page content.'''
+
+
